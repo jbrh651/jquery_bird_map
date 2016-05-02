@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Bird Map</title>
+    
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCPlYDmfhuarqC70mkJ7YV2EjnCnSpiZJU&callback=initMap">
+    </script>
+    
+    <script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/infobox/src/infobox.js"></script>
+    
+    <script   src="https://code.jquery.com/jquery-2.2.3.min.js"   integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo="   crossorigin="anonymous"></script>
+<style>
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #B1C18D;
+}
+
+a {
+    color: pink;
+}
+
+#map {
+    height: 400px;
+}
+ 
+/*Google Search Styling from  https://jsfiddle.net/yy1chuxw/ */
+
+#___gcse_0 .cse .gsc-control-cse,
+#___gcse_0 .gsc-control-cse {
+    /*background-color: rgba(0, 0, 255, 0.5) !important;*/
+    width: 500px !important;
+    padding-right: 50px;
+    float:right;
+}
+
+.gsc-orderby {
+    display: none;
+}
+
+      /* white background and box outline */
+.gm-style > div:first-child > div + div > div:last-child > div > div:first-child > div {
+    /* we have to use !important because we are overwritng inline styles */
+    background-color: transparent !important;
+    box-shadow: none !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+/* arrow colour */
+.gm-style > div:first-child > div + div > div:last-child > div > div:first-child > div > div > div {
+    background-color: #003366 !important; 
+}
+
+/* close button */
+.gm-style > div:first-child > div + div > div:last-child > div > div:last-child {
+    margin-right: 5px;
+    margin-top: 5px;
+}
+
+/* image icon inside close button */
+/*.gm-style > div:first-child > div + div > div:last-child > div > div:last-child > img
+{
+    color: black;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+}*/
+
+/* positioning of infowindow */
+
+.gm-style-iw {
+    background-color: navy;
+    color: white;
+    border-radius:4px;
+    box-shadow:8px 8px 16px #222;
+    padding-left: 15px;
+    /*top: 22px !important;*/
+    /*left: 22px !important;*/
+}
+ 
+#searchInfo {
+    padding-left: 50px;
+    width: 500px;
+    float: left;
+}     
+      
+</style>
+</head>
+<body>
+<div id="map"></div>
+<br>
+<div id="searchInfo"><h3>Click on a marker to generate a list of recent sightings at that location. Then, simply click on a common name in the list to automatically search for the Audubon field guide entry for that species.</h3><h3>Finally, before locating another field guide entry, clear the search box by clicking the 'X' on the right side of the box.</h3></div>
+<script>
+
+      // This example displays a marker at the center of Australia.
+      // When the user clicks the marker, an info window opens.
+
+      function initMap() {
+        var audubon = {lat: 40.123349, lng: -75.4421161};
+        var heinz = {lat: 39.8893501, lng: -75.2601457};
+        var wayne = {lat: 40.042545, lng: -75.370646};
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 9,
+          center: wayne
+        });
+        
+        var jsonstuff1 = (function () {
+            var json = null;
+            $.ajax({
+               'async': false,
+                'global': false,
+                'url': 'http://ebird.org/ws1.1/data/obs/hotspot/recent?r=L144860&back=10&fmt=json',
+                'dataType': "json",
+                'success': function (data) {
+                    json = data;
+                }
+            });
+            return json;
+    
+        })();
+
+        var jsonstuff2 = (function () {
+            var json = null;
+            $.ajax({
+               'async': false,
+                'global': false,
+                'url': 'http://ebird.org/ws1.1/data/obs/hotspot/recent?r=L504403&back=10&fmt=json',
+                'dataType': "json",
+                'success': function (data) {
+                    json = data;
+                  }
+            });
+            return json;
+        })();
+
+        var contentString1 = '<div class="content">'+
+            '<h4><em>Recent bird sightings at:</em></h4>'+
+            '<h4><a href="http://johnjames.audubon.org/" target="_blank">John James Audobon Center</a></h4>'+
+            '<div>'+
+            '<ul id="jsonData1"></ul>'+
+            '</div>'+
+            '</div>';
+            
+          var contentString2 = '<div class="content">'+
+            '<h4><em>Recent bird sightings at:</em></h4>'+
+            '<h4><a href="http://www.fws.gov/refuge/John_Heinz/" target="_blank">John Heinz NWR</a></h4>'+
+            '<div>'+
+            '<ul id="jsonData2"></ul>'+
+            '</div>'+
+            '</div>';
+
+        var infowindow1 = new google.maps.InfoWindow({
+          content: contentString1,
+          maxWidth: 200
+        });
+      
+        
+        var infowindow2 = new google.maps.InfoWindow({
+          content: contentString2,
+          maxWidth: 200
+        });
+
+        var marker1 = new google.maps.Marker({
+          position: audubon,
+          map: map,
+          title: 'John James Audubon Center',
+          animation: google.maps.Animation.DROP
+        });
+        
+        marker1.addListener('click', function() {
+          infowindow1.open(map, marker1);
+          $.each(jsonstuff1, function (key, val) {
+          $('#jsonData1').append("<li>" + val.comName + "</li>");
+          });
+          $("#jsonData1").on("click", "li", function() {
+                var content = $(this).html();// from http://jsfiddle.net/deovgtje/1/
+                $("#gsc-i-id1").val($("#gsc-i-id1").val() + content + "\n");
+                $('input.gsc-search-button').click();
+                $('form.gsc-search-box'); // from http://jsbin.com/UgUxEKo/3/edit?html,output
+    });
+        });
+        
+        infowindow1.addListener('closeclick', function () {
+            map.setCenter(wayne);
+            map.setZoom(9);
+        });
+        
+       var marker2 = new google.maps.Marker({
+          position: heinz,
+          map: map,
+          title: 'John Heinz NWR',
+          animation: google.maps.Animation.DROP
+        });
+        
+        marker2.addListener('click', function() {
+          infowindow2.open(map, marker2);
+          $.each(jsonstuff2, function (key, val) {
+          $('#jsonData2').append("<li>" + val.comName + "</li>");
+        });
+          $("#jsonData2").on("click", "li", function() {
+                var content = $(this).html();// from http://jsfiddle.net/deovgtje/1/
+                $("#gsc-i-id1").val($("#gsc-i-id1").val() + content + "\n");
+                $('input.gsc-search-button').click();
+                $('form.gsc-search-box'); // from http://jsbin.com/UgUxEKo/3/edit?html,output
+    });
+        
+        });
+        
+         infowindow2.addListener('closeclick', function () {
+            map.setCenter(wayne); 
+            map.setZoom(9);
+        });
+      }
+</script>
+<script>
+  (function() {
+    var cx = '000716666758761337909:_gunpiygdy8';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') +
+        '//cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+
+</script>
+<gcse:search></gcse:search>
+</body>
+</html>
